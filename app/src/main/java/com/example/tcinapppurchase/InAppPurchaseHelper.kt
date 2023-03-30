@@ -81,6 +81,7 @@ class InAppPurchaseHelper(val context: Activity) {
             override fun onBillingServiceDisconnected() {
                 // Try to restart the connection on the next request to
                 // Google Play by calling the startConnection() method.
+                connectionStartListener.postValue(false)
                 Log.d(TAG, "onBillingServiceDisconnected" )
             }
         })
@@ -115,6 +116,10 @@ class InAppPurchaseHelper(val context: Activity) {
         // Ensure entitlement was not already granted for this purchaseToken.
         // Grant entitlement to the user.
         Log.d(TAG, "handlePurchase purchase = $purchase")
+        Log.d(TAG, " orderId = ${purchase.orderId}")
+        Log.d(TAG, " isAcknowledged = ${purchase.isAcknowledged}")
+        Log.d(TAG, " purchaseState = ${purchase.purchaseState}")
+        Log.d(TAG, " purchaseState = ${purchase.purchaseToken}")
         if (purchase.purchaseState == PurchaseState.PURCHASED) {
             Log.d(TAG, "handlePurchase purchased  = $purchase")
             // Grant entitlement to the user.
@@ -160,7 +165,7 @@ class InAppPurchaseHelper(val context: Activity) {
         val queryProductDetailsParams =
             QueryProductDetailsParams.newBuilder()
                 .setProductList(listOf( Product.newBuilder()
-                    .setProductId("test_prod_10")
+                    .setProductId("1")
                     .setProductType(ProductType.INAPP)
                     .build()))
                 .build()
@@ -190,12 +195,19 @@ class InAppPurchaseHelper(val context: Activity) {
             Log.d(TAG, purchaseHistoryResult.billingResult.debugMessage)
             Log.d(TAG,"purchaseHistoryRecordList =  ${purchaseHistoryResult.purchaseHistoryRecordList}")
 
+            purchaseHistoryResult.purchaseHistoryRecordList?.let {
+                for(item in it) {
+                    Log.d(TAG,"purchaseHistoryRecordList =  ${purchaseHistoryResult.purchaseHistoryRecordList}")
+                }
+            }
+
             //to get most recent purchases
             val queryPurchaseHistoryParams = QueryPurchaseHistoryParams
                 .newBuilder().
                 setProductType(ProductType.INAPP)
                 .build()
-            billingClient.queryPurchaseHistoryAsync(queryPurchaseHistoryParams, purchaseHistoryResponseListener)
+
+              billingClient.queryPurchaseHistoryAsync(queryPurchaseHistoryParams, purchaseHistoryResponseListener)
 
             // to get All purchases Note: querypurchases returns what's cached in the play store app
             // recommended: Cache purchase details on your servers
@@ -217,7 +229,7 @@ class InAppPurchaseHelper(val context: Activity) {
             }
             retrieveProducts(products)
         } else {
-            Log.d(TAG, "handlePurchaseHistory is empty or null list ")
+            Log.d(TAG, "handlePurchaseHistory is empty or null $list ")
         }
     }
 
@@ -244,7 +256,7 @@ class InAppPurchaseHelper(val context: Activity) {
             Log.d(TAG, "retrieveProducts2 billingResult debugMessage  ${billingResult.debugMessage}" )
             if (skuDetailsList.isNotEmpty()) {
                 // TODO: Discuss to call billing flow or not
-                launchBillingFlow(skuDetailsList)
+//                launchBillingFlow(skuDetailsList)
             } else {
                 Log.d(TAG, "No product matches found")
                 // No product matches found
@@ -260,7 +272,12 @@ class InAppPurchaseHelper(val context: Activity) {
     private fun handlePurchaseResponse(purchases: List<Purchase>) {
         val pendingList  = mutableListOf<Purchase>()
         for(purchase in purchases) {
+            Log.d(TAG, " orderId = ${purchase.orderId}")
+            Log.d(TAG, " isAcknowledged = ${purchase.isAcknowledged}")
+            Log.d(TAG, " purchaseState = ${purchase.purchaseState}")
+            Log.d(TAG, " purchaseState = ${purchase.purchaseToken}")
             if(purchase.purchaseState == PurchaseState.PENDING) {
+                Log.d(TAG, "Pending orderId = ${purchase.orderId}")
                 pendingList.add(purchase)
             }
         }
@@ -279,5 +296,9 @@ class InAppPurchaseHelper(val context: Activity) {
             acknowledgePurchaseParams,
             acknowledgePurchaseResponseListener
         )
+    }
+
+    fun endConnection() {
+       billingClient.endConnection()
     }
 }

@@ -32,6 +32,16 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        inAppPurchaseHelper.queryPurchaseHistoryAsync()
+        if(isConnectionEstablished) {
+            inAppPurchaseHelper.queryPurchaseHistoryAsync()
+        } else {
+            initInAppPurchaseConnection()
+            inAppPurchaseHelper.queryPurchaseHistoryAsync()
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        inAppPurchaseHelper.endConnection()
     }
 }
